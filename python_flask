@@ -1,1 +1,47 @@
+# Import necessary libraries
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
 
+# Load the dataset
+@st.cache_data  # This decorator will ensure data is loaded only once and stored in cache
+def load_data():
+    url = "https://data.cdc.gov/resource/swc5-untb.csv?$query=SELECT%0A%20%20%60year%60%2C%0A%20%20%60stateabbr%60%2C%0A%20%20%60statedesc%60%2C%0A%20%20%60locationname%60%2C%0A%20%20%60datasource%60%2C%0A%20%20%60category%60%2C%0A%20%20%60measure%60%2C%0A%20%20%60data_value_unit%60%2C%0A%20%20%60data_value_type%60%2C%0A%20%20%60data_value%60%2C%0A%20%20%60data_value_footnote_symbol%60%2C%0A%20%20%60data_value_footnote%60%2C%0A%20%20%60low_confidence_limit%60%2C%0A%20%20%60high_confidence_limit%60%2C%0A%20%20%60totalpopulation%60%2C%0A%20%20%60locationid%60%2C%0A%20%20%60categoryid%60%2C%0A%20%20%60measureid%60%2C%0A%20%20%60datavaluetypeid%60%2C%0A%20%20%60short_question_text%60%2C%0A%20%20%60geolocation%60%2C%0A%20%20%60%3A%40computed_region_skr5_azej%60%0AWHERE%20caseless_one_of(%60stateabbr%60%2C%20%22CA%22)"
+    return pd.read_csv(url)
+
+df = load_data()
+
+# Title of the Streamlit app
+st.title("Binge Drinking Age-adjusted Prevalence in CA by County")
+
+# Filter the dataset
+df_binge = df[(df['measureid'] == 'BINGE') & (df['data_value_type'] == 'Age-adjusted prevalence')]
+
+# Sidebar for county selection
+county = st.sidebar.selectbox("Choose a county", sorted(df_binge['locationname'].unique()))
+data_county = df_binge[df_binge['locationname'] == county]
+
+# Calculate average across all counties
+avg_value = df_binge['data_value'].mean()
+
+# Display selected county's data and average data
+st.write(f'Data for {county} and Average Data for All Counties')
+st.write(data_county)
+
+# Plotting
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Plotting the data for the selected county
+ax.bar(county, data_county['data_value'].mean(), color='lightcoral', label=county)
+
+# Plotting the average data value across all counties
+ax.axhline(avg_value, color='dodgerblue', linestyle='dashed', label='Average Across All Counties')
+
+ax.set_title('Binge Drinking Age-adjusted Prevalence')
+ax.set_ylabel('data value (Age-adjusted prevalence) - Percent')
+ax.set_xlabel('location (County)')
+ax.set_ylim(0, 30) # Set the y-axis limit
+ax.legend(loc='upper right')
+
+plt.xticks(rotation=90)
+st.pyplot(fig)  
