@@ -1,1 +1,47 @@
+rom shiny import App, render, ui
+import matplotlib.pyplot as plt
+import pandas as pd
 
+# Load the dataset
+def load_data():
+    url = "https://data.cdc.gov/resource/swc5-untb.csv?$query=SELECT%0A%20%20%60year%60%2C%0A%20%20%60stateabbr%60%2C%0A%20%20%60statedesc%60%2C%0A%20%20%60locationname%60%2C%0A%20%20%60datasource%60%2C%0A%20%20%60category%60%2C%0A%20%20%60measure%60%2C%0A%20%20%60data_value_unit%60%2C%0A%20%20%60data_value_type%60%2C%0A%20%20%60data_value%60%2C%0A%20%20%60data_value_footnote_symbol%60%2C%0A%20%20%60data_value_footnote%60%2C%0A%20%20%60low_confidence_limit%60%2C%0A%20%20%60high_confidence_limit%60%2C%0A%20%20%60totalpopulation%60%2C%0A%20%20%60locationid%60%2C%0A%20%20%60categoryid%60%2C%0A%20%20%60measureid%60%2C%0A%20%20%60datavaluetypeid%60%2C%0A%20%20%60short_question_text%60%2C%0A%20%20%60geolocation%60%2C%0A%20%20%60%3A%40computed_region_skr5_azej%60%0AWHERE%20caseless_one_of(%60stateabbr%60%2C%20%22CA%22)"
+    return pd.read_csv(url)
+
+df = load_data()
+df_binge = df[(df['measureid'] == 'BINGE') & (df['data_value_type'] == 'Age-adjusted prevalence')]
+
+# Available counties for selection
+counties = df_binge['locationname'].unique()
+
+app_ui = ui.page_fluid(
+    ui.input_select("county", "Select County", {county: county for county in counties}),
+    ui.output_text_verbatim("avg_data_value"),
+    ui.output_plot("bar_chart")
+)
+
+def server(input, output, session):
+
+    @output
+    @render.text
+    def avg_data_value():
+        selected_county = input.county()
+        avg_value = df_binge[df_binge['locationname'] == selected_county]['data_value'].mean()
+        return f"Average Binge Drinking Age-adjusted Prevalence for {selected_county}: {avg_value:.2f}%"
+
+    @output
+    @render.plot(alt="Binge Drinking Age-adjusted Prevalence Bar Chart")
+    def bar_chart():
+        overall_avg = df_binge['data_value'].mean()
+        selected_county_avg = df_binge[df_binge['locationname'] == input.county()]['data_value'].mean()
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.bar(['Selected County', 'Overall Average'], [selected_county_avg, overall_avg], color=['lightcoral', 'dodgerblue'])
+        
+        ax.set_ylabel('Data Value (Age-adjusted prevalence) - Percent')
+        ax.set_ylim(0, 30)
+        ax.set_title('Binge Drinking Age-adjusted Prevalence Comparison')
+        
+        return fig
+
+
+app = App(app_ui, server)
