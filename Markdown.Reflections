@@ -1,2 +1,4 @@
-# Challenges for Flask
+# Challenges for Flask, Shiny R, and Python's Shiny.
+
 The biggest challenge I encountered while doing this assigment was to to determine the changes that needed to be done in order for the app to run. A simple capital letter was preventing it from opening. After changing the dataset, also the commands for the code changed, making it very difficult to determine which one was causing the error.  
+This problem was exactly the same for all the applications. 
